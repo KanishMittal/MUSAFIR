@@ -10,10 +10,6 @@ const FeaturedTourList = () => {
         `${BASE_URL}/tours/search/getFeaturedTours`
     );
 
-    console.log('BASE_URL:', BASE_URL);
-    console.log('Featured Tours:', featuredTours);
-    console.log('Error:', error);
-
     if (loading) return <Spinner color="primary">Loading...</Spinner>;
     if (error) return <Alert color="danger">Failed to load tours!</Alert>;
     console.log(featuredTours);
