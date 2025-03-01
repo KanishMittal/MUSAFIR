@@ -1,148 +1,58 @@
-// import React, { useState, useContext } from "react";
-
-// import { Container, Row, Col, Form, FormGroup, Button } from 'reactstrap';
-// import { Link, useNavigate } from 'react-router-dom'
-// import '../styles/login.css'
-
-// import registerImg from '../assets/images/login.png'
-// import userIcon from '../assets/images/user.png'
-
-// import {AuthContext} from './../context/AuthContext'
-// import {BASE_URL} from './../utils/config'
-
-// const Register = () => {
-
-//     const [credentials, setCredentials] = useState({
-//         userName: undefined,
-//         email: undefined,
-//         password: undefined
-//     });
-
-//     const {dispatch} = useContext(AuthContext)
-//     const navigate = useNavigate()
-
-//     const handleChange = e => {
-//         setCredentials(prev => ({ ...prev, [e.target.id]: e.target.value }))
-
-//     };
-//     const handleClick = async e => {
-//         e.preventDefault();
-
-//         try {
-//             const res = await fetch(`${BASE_URL}/auth/register`,{
-//                 method:'post',
-//                 headers:{
-//                     'content-type':'applications/json'
-//                 },
-//                 body: JSON.stringify(credentials)
-//             })
-
-//             const result = await res.json()
-
-//             if(!res.ok) alert(result.message)
-
-//             dispatch({type:'REGISTER_SUCCESS'})
-//             navigate('/login')
-//         } catch (err) {
-//             alert(err.message);
-//         }
-//     }
-
-//     return <section>
-//         <Container>
-//             <Row>
-//                 <Col lg='8' className="m-auto">
-//                     <div className="login__container d-flex justify-content-between">
-//                         <div className="login__img">
-//                             <img src={registerImg} alt="" />
-//                         </div>
-//                         <div className="login__form">
-//                             <div className="user">
-//                                 <img src={userIcon} alt="" />
-//                             </div>
-//                             <h2>
-//                                 Register
-//                             </h2>
-//                             <Form onSubmit={handleClick}>
-//                                 <FormGroup>
-//                                     <input type="text" placeholder="Username" require id="username"
-//                                         onChange={handleChange} />
-
-//                                 </FormGroup>
-//                                 <FormGroup>
-//                                     <input type="password" placeholder="Password" require id="password"
-//                                         onChange={handleChange} />
-
-//                                 </FormGroup>
-//                                 <Button className="btn secondary__btn auth__btn"
-//                                     type="submit">
-//                                     Create Account
-//                                 </Button>
-//                             </Form>
-//                             <p>
-//                                 Already have an account ?<Link to='/login'>Create</Link>
-//                             </p>
-//                         </div>
-//                     </div>
-
-//                 </Col>
-//             </Row>
-//         </Container>
-//     </section>
-// };
-
-// export default Register;
-
 import React, { useState, useContext } from "react";
-import { Container, Row, Col, Form, FormGroup, Button } from "reactstrap";
+import { Container, Row, Col, Form, FormGroup, Button, Spinner } from "reactstrap";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 
 import registerImg from "../assets/images/login.png";
 import userIcon from "../assets/images/user.png";
 
-import { AuthContext } from "./../context/AuthContext";
-import { BASE_URL } from "./../utils/config";
+import { AuthContext } from "../context/AuthContext";
+import { BASE_URL } from "../utils/config";
 
 const Register = () => {
   const [credentials, setCredentials] = useState({
-    username: "",  // ✅ Fixed field name to match backend
+    username: "",
     email: "",
     password: "",
   });
 
+  const [loading, setLoading] = useState(false); // ✅ Loading state for API call
   const { dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
+    setCredentials((prev) => ({
+      ...prev,
+      [e.target.id]: e.target.value.trim(), // ✅ Trim to avoid accidental spaces
+    }));
   };
 
   const handleClick = async (e) => {
     e.preventDefault();
 
+    setLoading(true); // Start loading
     try {
       const res = await fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json", // ✅ Fixed header type
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
 
       const result = await res.json();
-      console.log("API Response:", result); // ✅ Debugging Response
+      console.log("API Response:", result); // ✅ Debugging
 
       if (!res.ok) {
-        alert(result.message || "Failed to Create, try again!");
-        return;
+        throw new Error(result.message || "Registration failed, try again!");
       }
 
       dispatch({ type: "REGISTER_SUCCESS" });
+      alert("Account created successfully!");
       navigate("/login");
     } catch (err) {
-      console.error("Error:", err);
-      alert("Error: " + err.message);
+      console.error("Registration Error:", err);
+      alert(err.message);
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
@@ -165,9 +75,10 @@ const Register = () => {
                     <input
                       type="text"
                       placeholder="Username"
-                      id="username" // ✅ Fixed ID to match backend
+                      id="username"
                       value={credentials.username}
                       onChange={handleChange}
+                      autoComplete="off" // ✅ Prevents autofill issues
                       required
                     />
                   </FormGroup>
@@ -178,6 +89,7 @@ const Register = () => {
                       id="email"
                       value={credentials.email}
                       onChange={handleChange}
+                      autoComplete="email"
                       required
                     />
                   </FormGroup>
@@ -188,11 +100,16 @@ const Register = () => {
                       id="password"
                       value={credentials.password}
                       onChange={handleChange}
+                      autoComplete="new-password"
                       required
                     />
                   </FormGroup>
-                  <Button className="btn secondary__btn auth__btn" type="submit">
-                    Create Account
+                  <Button
+                    className="btn secondary__btn auth__btn"
+                    type="submit"
+                    disabled={loading} // ✅ Disable while loading
+                  >
+                    {loading ? <Spinner size="sm" /> : "Create Account"}
                   </Button>
                 </Form>
                 <p>
