@@ -1,5 +1,3 @@
-
-
 const calculateAvgRating = reviews => {
 
     const totalRating = reviews?.reduce((acc, items) => acc + items.rating, 0);
