@@ -246,7 +246,7 @@
 // export default TourDetails;
 
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Container, Row, Col, ListGroup } from "reactstrap";
 import { useParams } from "react-router-dom";
 import calculateAvgRating from "../utils/avgRating";
@@ -256,11 +256,13 @@ import Booking from "../components/Booking/Booking";
 import Newsletter from "../shared/Newsletter";
 import useFetch from "../hooks/useFetch";
 import { BASE_URL } from "../utils/config";
+import { AuthContext } from './../context/AuthContext';
 
 const TourDetails = () => {
     const { id } = useParams();
     const reviewMsgRef = useRef(null);
     const [tourRating, setTourRating] = useState(null);
+    const { user } = useContext(AuthContext);
 
     const { data: tour, loading, error } = useFetch(`${BASE_URL}/tours/${id}`);
 
@@ -277,19 +279,44 @@ const TourDetails = () => {
 
     const options = { day: "numeric", month: "long", year: "numeric" };
 
-    const submitHandler = (e) => {
+    const submitHandler = async (e) => {
         e.preventDefault();
         const reviewText = reviewMsgRef.current.value.trim();
-        if (!reviewText) return;
 
-        const newReview = {
-            text: reviewText,
-            rating: tourRating,
-            date: new Date().toISOString(),
-        };
+        if (!user) {
+            alert('Please sign in to submit a review.');
+            return;
+        }
 
-        console.log("New Review Submitted:", newReview);
-        reviewMsgRef.current.value = ""; // Clear input after submission
+        if (!reviewText || tourRating === null) {
+            alert('Please provide a rating and review.');
+            return;
+        }
+
+        try {
+            const reviewObj = {
+                username: user?.username,
+                reviewText,
+                rating: tourRating,
+            };
+            const res = await fetch(`${BASE_URL}/review/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(reviewObj),
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                return alert(result.message);
+            }
+            alert('Review submitted successfully!');
+            reviewMsgRef.current.value = "";
+            setTourRating(null);
+        } catch (err) {
+            alert(`Error submitting review: ${err.message}`);
+        }
     };
 
     return (
@@ -340,13 +367,23 @@ const TourDetails = () => {
                                     <form onSubmit={submitHandler}>
                                         <div className="d-flex align-items-center gap-3 mb-4 rating__group">
                                             {[1, 2, 3, 4, 5].map((star) => (
-                                                <span key={star} onClick={() => setTourRating(star)}>
+                                                <span 
+                                                    key={star} 
+                                                    onClick={() => setTourRating(star)}
+                                                    className={tourRating === star ? "selected" : ""}
+                                                    style={{ cursor: "pointer", color: tourRating === star ? "#ffc107" : "#000" }}
+                                                >
                                                     {star} <i className="ri-star-s-fill"></i>
                                                 </span>
                                             ))}
                                         </div>
                                         <div className="review__input">
-                                            <input type="text" ref={reviewMsgRef} placeholder="Share your thoughts" required />
+                                            <input 
+                                                type="text" 
+                                                ref={reviewMsgRef} 
+                                                placeholder="Share your thoughts" 
+                                                required 
+                                            />
                                             <button className="btn primary__btn text-white" type="submit">
                                                 Submit
                                             </button>
@@ -359,14 +396,14 @@ const TourDetails = () => {
                                                 <div className="w-100">
                                                     <div className="d-flex align-items-center justify-content-between">
                                                         <div>
-                                                            <h5>Kanish</h5>
-                                                            <p>{new Date("02-13-2025").toLocaleDateString("en-US", options)}</p>
+                                                            <h5>{review.username}</h5>
+                                                            <p>{new Date(review.createdAt).toLocaleDateString("en-US", options)}</p>
                                                         </div>
                                                         <span className="d-flex align-items-center">
-                                                            5 <i className="ri-star-s-fill"></i>
+                                                            {review.rating} <i className="ri-star-s-fill"></i>
                                                         </span>
                                                     </div>
-                                                    <h6>Amazing tour</h6>
+                                                    <h6>{review.reviewText}</h6>
                                                 </div>
                                             </div>
                                         ))}
