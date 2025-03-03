@@ -26,7 +26,11 @@ const FeaturedTourList = () => {
 
     // ✅ Simplified Conditional Rendering
     if (!featuredTours?.length) {
-        return <Alert color="info">No featured tours available.</Alert>;
+        return (
+            <Alert color="info" timeout={3000}>  {/* Add timeout here */}
+                No featured tours available.
+            </Alert>
+        );
     }
 
     return (
